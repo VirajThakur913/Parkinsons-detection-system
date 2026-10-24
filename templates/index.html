@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroSense AI - Parkinson's Screening CDSS</title>
+    <!-- Google Fonts: Outfit & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js for trends -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Main Style sheet -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="background-glow">
+        <div class="glow-1"></div>
+        <div class="glow-2"></div>
+    </div>
+
+    <!-- 1. AUTHENTICATION PORTAL (Shown if not logged in) -->
+    <div class="login-overlay" id="login-overlay">
+        <div class="login-card card">
+            <div class="logo logo-center">
+                <i class="fa-solid fa-brain-circuit icon-logo"></i>
+                <div class="logo-text">
+                    <h1>NeuroSense <span class="accent-text">AI</span></h1>
+                    <p>Clinical Decision Support System</p>
+                </div>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username"><i class="fa-solid fa-user"></i> Username</label>
+                    <input type="text" id="username" required placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="password"><i class="fa-solid fa-lock"></i> Password</label>
+                    <input type="password" id="password" required placeholder="Enter password">
+                </div>
+                <div id="login-error-msg" class="error-banner" style="display: none;"></div>
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fa-solid fa-right-to-bracket"></i> Login to System
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER (Hidden until auth success) -->
+    <div class="app-container" id="app-wrapper" style="display: none;">
+        <!-- Header -->
+        <header class="main-header">
+            <div class="logo">
+                <i class="fa-solid fa-brain-circuit icon-logo"></i>
+                <div class="logo-text">
+                    <h1>NeuroSense <span class="accent-text">AI</span></h1>
+                    <p>Clinical Decision Support System for Parkinson's Disease</p>
+                </div>
+            </div>
+            <div class="header-user-menu">
+                <div class="user-profile-info">
+                    <i class="fa-solid fa-user-doctor user-icon" id="user-role-icon"></i>
+                    <div>
+                        <span id="header-username">Dr. Jane Doe</span>
+                        <small id="header-user-role">Administrator</small>
+                    </div>
+                </div>
+                <button class="btn-logout" id="btn-app-logout" title="Logout">
+                    <i class="fa-solid fa-power-off"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- ==================== ADMINISTRATOR DASHBOARD ==================== -->
+        <div class="dashboard-grid" id="admin-dashboard" style="display: none;">
+            <!-- Left Sidebar: Registry and Actions -->
+            <aside class="sidebar">
+                <!-- Patient Registry Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-users"></i> Patient Registry</h2>
+                        <span class="badge" id="patient-count">0</span>
+                    </div>
+                    <div class="search-box">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="patient-search" placeholder="Search patients...">
+                    </div>
+                    <div class="patient-list" id="patient-list-container">
+                        <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading directory...</div>
+                    </div>
+                    <button class="btn btn-secondary btn-block" id="btn-toggle-add-patient" style="margin-top: 15px;">
+                        <i class="fa-solid fa-user-plus"></i> Register New Patient
+                    </button>
+                </div>
+
+                <!-- Add Patient Collapsible Form -->
+                <div class="card collapsible-card" id="add-patient-card" style="display: none; margin-top: 15px;">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-user-plus"></i> Add Patient</h3>
+                        <button class="btn-close-card" id="btn-close-add-patient"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <form id="add-patient-form">
+                        <div class="form-group-sm">
+                            <label for="new-p-id">Patient ID</label>
+                            <input type="text" id="new-p-id" required placeholder="e.g. H004, P004">
+                        </div>
+                        <div class="form-group-sm">
+                            <label for="new-p-name">Full Name</label>
+                            <input type="text" id="new-p-name" required placeholder="e.g. John Carter">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group-sm">
+                                <label for="new-p-age">Age</label>
+                                <input type="number" id="new-p-age" required min="1" max="120">
+                            </div>
+                            <div class="form-group-sm">
+                                <label for="new-p-gender">Gender</label>
+                                <select id="new-p-gender">
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block btn-sm" style="margin-top: 10px;">
+                            Save & Create Account
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Active Patient Card -->
+                <div class="card selected-patient-card" id="active-patient-details" style="display: none; margin-top: 15px;">
+                    <h3>Active Patient Profile</h3>
+                    <div class="detail-row">
+                        <span class="lbl">Name:</span>
+                        <span class="val" id="detail-name">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="lbl">ID:</span>
+                        <span class="val" id="detail-id">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="lbl">Age / Sex:</span>
+                        <span class="val" id="detail-age-gender">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="lbl">History:</span>
+                        <span class="val">No clinical history of dysphonia</span>
+                    </div>
+                    <div class="active-patient-actions">
+                        <button class="btn btn-secondary btn-block btn-sm" id="btn-load-patient-features">
+                            <i class="fa-solid fa-file-import"></i> Load Preset Sliders
+                        </button>
+                        <button class="btn btn-secondary btn-block btn-sm" id="btn-view-patient-past-tests">
+                            <i class="fa-solid fa-clock-rotate-left"></i> View Screening Log
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Workspace -->
+            <main class="main-content">
+                <!-- Navigation Tabs -->
+                <div class="tab-container">
+                    <button class="tab-btn active" data-tab="screening">
+                        <i class="fa-solid fa-stethoscope"></i> Multimodal Screening
+                    </button>
+                    <button class="tab-btn" data-tab="history">
+                        <i class="fa-solid fa-list-check"></i> Clinic History Log
+                    </button>
+                    <button class="tab-btn" data-tab="audit">
+                        <i class="fa-solid fa-shield-halved"></i> Audit Trails
+                    </button>
+                </div>
+
+                <!-- Tab content 1: Multimodal Screening -->
+                <div class="tab-content active" id="tab-screening">
+                    <div class="screening-flow-grid">
+                        
+                        <!-- LEFT SIDE: INPUT PARAMETERS (Voice and Drawing) -->
+                        <div class="screening-inputs-panel">
+                            
+                            <!-- 1. Voice Acquisition Card -->
+                            <div class="card input-subcard">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-microphone-lines"></i> 1. Voice Acquisition</h3>
+                                    <span class="badge" id="voice-source-badge">No Data Loaded</span>
+                                </div>
+                                <p class="section-desc">Record live patient voice (vowel phonation /a/) or load baseline feature presets.</p>
+                                
+                                <div class="voice-acquisition-controls">
+                                    <button class="btn btn-outline" id="btn-record-mic">
+                                        <i class="fa-solid fa-microphone"></i> Record Mic
+                                    </button>
+                                    <button class="btn btn-outline" id="btn-upload-audio">
+                                        <i class="fa-solid fa-file-audio"></i> Upload Audio File
+                                    </button>
+                                    <input type="file" id="voice-file-input" accept="audio/*,.wav,.mp3,.ogg,.m4a,.webm" style="display: none;">
+                                    <div class="recording-visualizer-box" id="mic-visualizer-container" style="display: none;">
+                                        <canvas id="waveform-canvas" width="220" height="40"></canvas>
+                                        <span id="recording-timer">00:03</span>
+                                    </div>
+                                    <div class="voice-stats-row" id="voice-extracted-stats" style="display: none;">
+                                        <span>F0: <strong id="stat-f0">0Hz</strong></span>
+                                        <span>Jitter: <strong id="stat-jitter">0%</strong></span>
+                                        <span>Shimmer: <strong id="stat-shimmer">0%</strong></span>
+                                        <span>RMS: <strong id="stat-rms">0</strong></span>
+                                    </div>
+                                </div>
+                                
+                                <div class="divider"><span>Acoustic Sliders</span></div>
+                                <div class="param-sliders-container" id="sliders-container">
+                                    <div class="loading-spinner"><i class="fa-solid fa-sliders"></i> Select a patient to load features...</div>
+                                </div>
+                            </div>
+
+                            <!-- 2. Motor Acquisition Card -->
+                            <div class="card input-subcard" style="margin-top: 20px;">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-pen-nib"></i> 2. Motor Acquisition (Drawing Canvas)</h3>
+                                </div>
+                                <p class="section-desc">Have the patient draw a continuous spiral from the center outwards on the digital canvas below, or upload a photo of a hand drawing.</p>
+                                
+                                <div class="whiteboard-container" id="whiteboard-container">
+                                    <canvas id="drawing-canvas" width="460" height="280"></canvas>
+                                    <div class="whiteboard-controls">
+                                        <div class="whiteboard-actions-left">
+                                            <button class="btn btn-secondary btn-sm" id="btn-clear-canvas">
+                                                <i class="fa-solid fa-trash-can"></i> Clear
+                                            </button>
+                                            <button class="btn btn-secondary btn-sm" id="btn-upload-drawing">
+                                                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Photo
+                                            </button>
+                                            <input type="file" id="drawing-file-input" accept="image/*,.png,.jpg,.jpeg,.bmp,.webp" style="display: none;">
+                                        </div>
+                                        <div class="presets-drawing-small">
+                                            <button class="btn btn-outline btn-sm" id="btn-preset-draw-healthy">Preset Healthy</button>
+                                            <button class="btn btn-outline btn-sm" id="btn-preset-draw-parkinson">Preset Parkinson</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Run screening trigger -->
+                            <div style="margin-top: 20px;">
+                                <button class="btn btn-primary btn-block btn-large" id="btn-run-multimodal-screening" disabled>
+                                    <i class="fa-solid fa-brain-circuit"></i> Run Multimodal Fusion Prediction
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT SIDE: MULTIMODAL DIAGNOSTIC REPORT -->
+                        <div class="screening-results-panel">
+                            <div class="card results-subcard">
+                                <div class="card-header">
+                                    <h3><i class="fa-solid fa-square-poll-vertical"></i> Assessment Output</h3>
+                                    <button class="btn btn-secondary btn-sm" id="btn-download-pdf-report" style="display: none;">
+                                        <i class="fa-solid fa-file-pdf"></i> Download PDF Report
+                                    </button>
+                                </div>
+
+                                <div id="multimodal-placeholder" class="result-placeholder">
+                                    <i class="fa-solid fa-network-wired fa-fade placeholder-icon"></i>
+                                    <p>Acquire both Vocal parameters and Motor drawing inputs, then click "Run Multimodal Fusion Prediction" to generate screening results.</p>
+                                </div>
+
+                                <div id="multimodal-result-container" style="display: none;">
+                                    
+                                    <!-- Combined Risk Score Cards -->
+                                    <div class="multimodal-scores-row">
+                                        <div class="score-card">
+                                            <span class="score-lbl">Vocal Risk</span>
+                                            <div class="mini-gauge-wrapper">
+                                                <div class="gauge-value" id="val-vocal-risk">0%</div>
+                                            </div>
+                                        </div>
+                                        <div class="score-card">
+                                            <span class="score-lbl">Motor Risk</span>
+                                            <div class="mini-gauge-wrapper">
+                                                <div class="gauge-value" id="val-motor-risk">0%</div>
+                                            </div>
+                                        </div>
+                                        <div class="score-card main-score">
+                                            <span class="score-lbl">Combined Fusion Risk</span>
+                                            <div class="gauge-wrapper" id="multimodal-gauge">
+                                                <div class="gauge-value" id="val-combined-risk">0%</div>
+                                                <p class="gauge-label">Combined</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="verdict-banner-row">
+                                        <span class="verdict-lbl">Screening Verdict:</span>
+                                        <span class="badge" id="multimodal-verdict-badge">High Risk</span>
+                                    </div>
+
+                                    <!-- Preprocessing & Feature Extraction visualizer grids -->
+                                    <div class="explainability-section" style="margin-top: 25px;">
+                                        <h4><i class="fa-solid fa-gears"></i> Motor Preprocessing Stages</h4>
+                                        <div class="stages-grid">
+                                            <div class="stage-box">
+                                                <span>Original Trace</span>
+                                                <div class="stage-img-wrapper">
+                                                    <img id="fusion-img-original" src="" alt="Original Drawing">
+                                                </div>
+                                            </div>
+                                            <div class="stage-box">
+                                                <span>Zhang-Suen Thinned</span>
+                                                <div class="stage-img-wrapper">
+                                                    <img id="fusion-img-thinned" src="" alt="Thinned Skeleton">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- SHAP Explainable AI Section -->
+                                    <div class="explainability-section" style="margin-top: 25px;">
+                                        <h4><i class="fa-solid fa-magnifying-glass-chart"></i> Vocal SHAP Local Explanation</h4>
+                                        <p class="explain-text">Displays the positive/negative SHAP feature pressure vectors contributing to the vocal risk score prediction.</p>
+                                        <div class="shap-plot-wrapper">
+                                            <img id="fusion-shap-image" src="" alt="SHAP Vocal Chart">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab content 2: Registry/Tests History -->
+                <div class="tab-content" id="tab-history">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-list-check"></i> Clinic Assessment Screening History</h3>
+                        </div>
+                        <p class="section-desc">Historical overview of multimodal screening assessments performed in this clinic.</p>
+                        
+                        <div class="table-responsive">
+                            <table class="data-table" id="clinic-history-table">
+                               <thead>
+                                   <tr>
+                                       <th>Test ID</th>
+                                       <th>Patient ID</th>
+                                       <th>Patient Name</th>
+                                       <th>Assessment Date</th>
+                                       <th>Risk Score</th>
+                                       <th>Verdict</th>
+                                       <th>Medical Report</th>
+                                   </tr>
+                               </thead>
+                               <tbody id="clinic-history-tbody">
+                                   <!-- Loaded dynamically -->
+                               </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab content 3: System Security Audit Trail -->
+                <div class="tab-content" id="tab-audit">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-shield-halved"></i> System Audit Logs</h3>
+                            <button class="btn btn-secondary btn-sm" id="btn-refresh-audit">
+                                <i class="fa-solid fa-rotate"></i> Refresh Logs
+                            </button>
+                        </div>
+                        <p class="section-desc">Tracks logins, diagnostic screening executions, patient registrations, database seeds, and system security actions.</p>
+                        
+                        <div class="table-responsive">
+                            <table class="data-table" id="audit-logs-table">
+                               <thead>
+                                   <tr>
+                                       <th>Log ID</th>
+                                       <th>Username</th>
+                                       <th>Action / Log Message</th>
+                                       <th>Timestamp</th>
+                                   </tr>
+                               </thead>
+                               <tbody id="audit-logs-tbody">
+                                   <!-- Loaded dynamically -->
+                               </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- ==================== PATIENT PERSONAL PORTAL ==================== -->
+        <div class="dashboard-grid" id="patient-dashboard" style="display: none;">
+            <!-- Left Profile Card -->
+            <aside class="sidebar">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fa-solid fa-user-circle"></i> Patient Profile</h2>
+                    </div>
+                    <div class="patient-profile-card">
+                        <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
+                        <h3 id="patient-profile-name">-</h3>
+                        <p class="patient-id-tag">ID: <span id="patient-profile-id">-</span></p>
+                        <div class="divider"></div>
+                        <div class="detail-row">
+                            <span class="lbl">Age:</span>
+                            <span class="val" id="patient-profile-age">-</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="lbl">Gender:</span>
+                            <span class="val" id="patient-profile-gender">-</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main Patient workspace -->
+            <main class="main-content">
+                <!-- Trend line chart -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-chart-line"></i> Longitudinal Screening Progression Trend</h3>
+                    </div>
+                    <p class="section-desc">This chart tracks your screening combined risk score values across all clinical test logs, showing progression metrics.</p>
+                    <div class="chart-container" style="position: relative; height:240px; width:100%">
+                        <canvas id="patient-trend-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Personal logs history -->
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-file-medical"></i> My Diagnostic Log Reports</h3>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table" id="patient-history-table">
+                           <thead>
+                               <tr>
+                                   <th>Date</th>
+                                   <th>Vocal Risk</th>
+                                   <th>Motor Risk</th>
+                                   <th>Combined Risk Score</th>
+                                   <th>Verdict Category</th>
+                                   <th>Action</th>
+                               </tr>
+                           </thead>
+                           <tbody id="patient-history-tbody">
+                               <!-- Injected dynamically -->
+                           </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Main javascript sheet -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyd
+
+# SQLite Database (generated on app start)
+*.db
+*.sqlite3
+
+# External Reference Repositories
+Parkinson-s-Disease-Detection-Using-Hand-Drawings/
+parkinsons-detector/
+drawing_dataset_source/
+
+# Runtime Uploads & Generated Reports (preserve folder structure via .gitkeep)
+static/reports/*
+!static/reports/.gitkeep
+static/uploads/*
+!static/uploads/.gitkeep
+static/temp/*
+!static/temp/.gitkeep
+static/plots/*
+!static/plots/.gitkeep
+
+# System & IDE files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
