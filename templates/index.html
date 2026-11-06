@@ -291,6 +291,39 @@
                                     <div class="verdict-banner-row">
                                         <span class="verdict-lbl">Screening Verdict:</span>
                                         <span class="badge" id="multimodal-verdict-badge">High Risk</span>
+                                        <span class="badge" id="aeris-algo-badge" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4);"><i class="fa-solid fa-microchip"></i> AERIS-PD Hybrid</span>
+                                    </div>
+
+                                    <!-- AERIS-PD Uncertainty Safety Guard Banner -->
+                                    <div id="aeris-uncertainty-banner" class="error-banner" style="display: none; margin-top: 15px; border-left: 4px solid #f59e0b; background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 12px; border-radius: 6px; text-align: left;">
+                                        <div style="display: flex; align-items: flex-start; gap: 10px;">
+                                            <i class="fa-solid fa-triangle-exclamation" style="font-size: 1.2rem; margin-top: 2px;"></i>
+                                            <div>
+                                                <strong style="color: #fde68a;">AERIS-PD Uncertainty Safety Guard Triggered</strong>
+                                                <p id="aeris-uncertainty-reasons" style="margin: 4px 0; font-size: 0.85rem; color: #fef08a;"></p>
+                                                <small id="aeris-uncertainty-rec" style="font-size: 0.8rem; color: #cbd5e1;"></small>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- AERIS-PD Reliability & Quality Metrics Row -->
+                                    <div class="aeris-metrics-grid" id="aeris-metrics-row" style="margin-top: 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                                        <div class="card" style="padding: 10px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                                            <small style="color: #94a3b8; font-size: 0.72rem; display: block; margin-bottom: 4px;"><i class="fa-solid fa-volume-high"></i> Voice Quality (Q_v)</small>
+                                            <div id="val-voice-quality" style="font-weight: 700; color: #38bdf8; font-size: 1.05rem;">100%</div>
+                                        </div>
+                                        <div class="card" style="padding: 10px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                                            <small style="color: #94a3b8; font-size: 0.72rem; display: block; margin-bottom: 4px;"><i class="fa-solid fa-shield-halved"></i> Voice Reliability (R_v)</small>
+                                            <div id="val-voice-reliability" style="font-weight: 700; color: #818cf8; font-size: 1.05rem;">--</div>
+                                        </div>
+                                        <div class="card" style="padding: 10px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                                            <small style="color: #94a3b8; font-size: 0.72rem; display: block; margin-bottom: 4px;"><i class="fa-solid fa-pen-nib"></i> Motor Quality (Q_m)</small>
+                                            <div id="val-motor-quality" style="font-weight: 700; color: #38bdf8; font-size: 1.05rem;">100%</div>
+                                        </div>
+                                        <div class="card" style="padding: 10px; text-align: center; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                                            <small style="color: #94a3b8; font-size: 0.72rem; display: block; margin-bottom: 4px;"><i class="fa-solid fa-shield-halved"></i> Motor Reliability (R_m)</small>
+                                            <div id="val-motor-reliability" style="font-weight: 700; color: #818cf8; font-size: 1.05rem;">--</div>
+                                        </div>
                                     </div>
 
                                     <!-- Preprocessing & Feature Extraction visualizer grids -->

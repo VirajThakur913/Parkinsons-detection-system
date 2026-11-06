@@ -5,9 +5,13 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 
-def generate_medical_report(test_id, patient_info, voice_score, motor_score, final_score, risk_level, original_img_path, thinned_img_path, shap_plot_path, output_pdf_path, mode='both'):
+def generate_medical_report(test_id, patient_info, voice_score, motor_score, final_score, risk_level,
+                            original_img_path, thinned_img_path, shap_plot_path, output_pdf_path,
+                            mode='both', reliability_voice=None, reliability_motor=None,
+                            quality_voice=None, quality_motor=None, is_uncertain=False,
+                            uncertainty_reasons=None, recommendation=None, algorithm='AERIS-PD'):
     """
-    Compiles a highly professional medical screening PDF report.
+    Compiles a highly professional medical screening PDF report with AERIS-PD reliability & uncertainty metrics.
     """
     # Create parent folder if not exists
     os.makedirs(os.path.dirname(output_pdf_path), exist_ok=True)
@@ -29,7 +33,7 @@ def generate_medical_report(test_id, patient_info, voice_score, motor_score, fin
         'ClinicTitle',
         parent=styles['Heading1'],
         fontName='Helvetica-Bold',
-        fontSize=22,
+        fontSize=20,
         textColor=colors.HexColor('#0f172a'),
         spaceAfter=3
     )
@@ -40,7 +44,7 @@ def generate_medical_report(test_id, patient_info, voice_score, motor_score, fin
         fontName='Helvetica-Bold',
         fontSize=9,
         textColor=colors.HexColor('#64748b'),
-        spaceAfter=15
+        spaceAfter=12
     )
     
     section_heading = ParagraphStyle(
@@ -208,7 +212,52 @@ def generate_medical_report(test_id, patient_info, voice_score, motor_score, fin
     story.append(result_table)
     story.append(Spacer(1, 10))
     story.append(Paragraph(f"<b>Clinical Interpretation Note:</b> {risk_desc}", body_style))
-    story.append(Spacer(1, 15))
+    story.append(Spacer(1, 12))
+
+    # 2b. AERIS-PD Reliability & Uncertainty Matrix
+    if reliability_voice is not None or reliability_motor is not None or is_uncertain:
+        story.append(Paragraph("AERIS-PD ADAPTIVE RELIABILITY & UNCERTAINTY MATRIX", section_heading))
+        r_voice_str = f"{reliability_voice*100:.1f}%" if reliability_voice is not None else "N/A"
+        r_motor_str = f"{reliability_motor*100:.1f}%" if reliability_motor is not None else "N/A"
+        q_voice_str = f"{quality_voice*100:.1f}%" if quality_voice is not None else "N/A"
+        q_motor_str = f"{quality_motor*100:.1f}%" if quality_motor is not None else "N/A"
+        unc_status_str = "UNCERTAIN (Review Recommended)" if is_uncertain else "CONFIDENT (Verified)"
+        unc_status_color = colors.HexColor('#dc2626') if is_uncertain else colors.HexColor('#16a34a')
+        
+        matrix_data = [
+            [
+                Paragraph("Voice Quality (Q_v)", label_style), Paragraph(q_voice_str, value_style),
+                Paragraph("Voice Reliability (R_v)", label_style), Paragraph(r_voice_str, value_style)
+            ],
+            [
+                Paragraph("Motor Quality (Q_m)", label_style), Paragraph(q_motor_str, value_style),
+                Paragraph("Motor Reliability (R_m)", label_style), Paragraph(r_motor_str, value_style)
+            ],
+            [
+                Paragraph("Uncertainty Safety Status", label_style),
+                Paragraph(unc_status_str, ParagraphStyle('USS', parent=value_style, fontName='Helvetica-Bold', textColor=unc_status_color)),
+                Paragraph("Screening Framework", label_style),
+                Paragraph("AERIS-PD Adaptive Hybrid", value_style)
+            ]
+        ]
+        matrix_table = Table(matrix_data, colWidths=[135, 135, 135, 135])
+        matrix_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+            ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#cbd5e1')),
+            ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+            ('PADDING', (0,0), (-1,-1), 6),
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ]))
+        story.append(matrix_table)
+        
+        if is_uncertain and uncertainty_reasons:
+            reasons_text = "<br/>• " + "<br/>• ".join(uncertainty_reasons if isinstance(uncertainty_reasons, list) else [str(uncertainty_reasons)])
+            rec_text = recommendation if recommendation else "Insufficient confidence. Please repeat the assessment or consult a healthcare professional."
+            warn_para = Paragraph(f"<b>Safety Interception Reasons:</b>{reasons_text}<br/><b>Clinical Guidance:</b> {rec_text}", 
+                                  ParagraphStyle('WarnP', parent=body_style, textColor=colors.HexColor('#b91c1c'), backColor=colors.HexColor('#fef2f2'), borderPadding=6))
+            story.append(Spacer(1, 6))
+            story.append(warn_para)
+        story.append(Spacer(1, 12))
     
     # 3. Handwriting Analysis Section (Omitted in Voice-Only Mode)
     if mode != 'voice':

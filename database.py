@@ -54,10 +54,33 @@ def init_db():
             original_drawing_url TEXT,
             thinned_drawing_url TEXT,
             pdf_url TEXT,
+            reliability_voice REAL DEFAULT 1.0,
+            reliability_motor REAL DEFAULT 1.0,
+            quality_voice REAL DEFAULT 1.0,
+            quality_motor REAL DEFAULT 1.0,
+            is_uncertain INTEGER DEFAULT 0,
+            uncertainty_reasons TEXT DEFAULT '',
+            algorithm TEXT DEFAULT 'AERIS-PD',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (patient_id) REFERENCES patients(id)
         )
     ''')
+
+    # Auto-migration for existing tests table
+    columns_to_add = [
+        ("reliability_voice", "REAL DEFAULT 1.0"),
+        ("reliability_motor", "REAL DEFAULT 1.0"),
+        ("quality_voice", "REAL DEFAULT 1.0"),
+        ("quality_motor", "REAL DEFAULT 1.0"),
+        ("is_uncertain", "INTEGER DEFAULT 0"),
+        ("uncertainty_reasons", "TEXT DEFAULT ''"),
+        ("algorithm", "TEXT DEFAULT 'AERIS-PD'")
+    ]
+    for col_name, col_type in columns_to_add:
+        try:
+            cursor.execute(f"ALTER TABLE tests ADD COLUMN {col_name} {col_type}")
+        except sqlite3.OperationalError:
+            pass  # Already exists
     
     # 4. Audit Logs table (System Administration tracking)
     cursor.execute('''
@@ -174,14 +197,24 @@ def get_patient_by_id(patient_id):
     return None
 
 # Test screening log handlers
-def log_screening_test(test_id, patient_id, voice_score, motor_score, final_score, risk_level, original_url=None, thinned_url=None, pdf_url=None):
+def log_screening_test(test_id, patient_id, voice_score, motor_score, final_score, risk_level,
+                       original_url=None, thinned_url=None, pdf_url=None,
+                       reliability_voice=1.0, reliability_motor=1.0,
+                       quality_voice=1.0, quality_motor=1.0,
+                       is_uncertain=0, uncertainty_reasons="", algorithm="AERIS-PD"):
     conn = get_db_connection()
     cursor = conn.cursor()
     date_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     cursor.execute('''
-        INSERT INTO tests (id, patient_id, date, voice_score, motor_score, final_score, risk_level, original_drawing_url, thinned_drawing_url, pdf_url)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (test_id, patient_id, date_str, voice_score, motor_score, final_score, risk_level, original_url, thinned_url, pdf_url))
+        INSERT INTO tests (id, patient_id, date, voice_score, motor_score, final_score, risk_level,
+                           original_drawing_url, thinned_drawing_url, pdf_url,
+                           reliability_voice, reliability_motor, quality_voice, quality_motor,
+                           is_uncertain, uncertainty_reasons, algorithm)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (test_id, patient_id, date_str, voice_score, motor_score, final_score, risk_level,
+          original_url, thinned_url, pdf_url,
+          reliability_voice, reliability_motor, quality_voice, quality_motor,
+          1 if is_uncertain else 0, str(uncertainty_reasons), algorithm))
     conn.commit()
     conn.close()
 
@@ -189,7 +222,10 @@ def get_patient_test_history(patient_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
-        SELECT id, date, voice_score, motor_score, final_score, risk_level, original_drawing_url, thinned_drawing_url, pdf_url
+        SELECT id, date, voice_score, motor_score, final_score, risk_level,
+               original_drawing_url, thinned_drawing_url, pdf_url,
+               reliability_voice, reliability_motor, quality_voice, quality_motor,
+               is_uncertain, uncertainty_reasons, algorithm
         FROM tests WHERE patient_id = ? ORDER BY date DESC
     ''', (patient_id,))
     rows = cursor.fetchall()

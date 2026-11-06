@@ -1,0 +1,11 @@
+Metric,Baseline (Fixed Late Fusion),Proposed AERIS-PD (All Cohort),Proposed AERIS-PD (UAED Confident)
+Accuracy,0.9000,0.9000,0.9565
+Precision,0.8750,0.8333,0.9286
+Recall (Sens),0.9333,1.0000,1.0000
+Specificity,0.8667,0.8000,0.9000
+F1-Score,0.9032,0.9091,0.9630
+ROC-AUC,0.9911,0.9822,0.9692
+PR-AUC,0.9922,0.9815,0.9752
+FPR,0.1333,0.2000,0.1000
+FNR,0.0667,0.0000,0.0000
+Latency (ms),0.23,1.76,1.76

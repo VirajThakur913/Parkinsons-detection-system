@@ -863,7 +863,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Verdict Badges coloring
             let color = '#10b981'; // Green
-            if (data.risk_level === 'High Risk') {
+            if (data.is_uncertain) {
+                color = '#f59e0b'; // Amber for uncertainty
+                multimodalVerdictBadge.className = 'badge moderate-risk';
+            } else if (data.risk_level === 'High Risk') {
                 color = '#f43f5e'; // Rose
                 multimodalVerdictBadge.className = 'badge high-risk';
             } else if (data.risk_level === 'Moderate Risk') {
@@ -873,6 +876,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 multimodalVerdictBadge.className = 'badge low-risk';
             }
             multimodalVerdictBadge.textContent = data.risk_level;
+
+            // Populate AERIS-PD Reliability & Quality Metrics
+            const elVQ = document.getElementById('val-voice-quality');
+            const elVR = document.getElementById('val-voice-reliability');
+            const elMQ = document.getElementById('val-motor-quality');
+            const elMR = document.getElementById('val-motor-reliability');
+            const elBanner = document.getElementById('aeris-uncertainty-banner');
+            const elReasons = document.getElementById('aeris-uncertainty-reasons');
+            const elRec = document.getElementById('aeris-uncertainty-rec');
+
+            if (elVQ) elVQ.textContent = `${Math.round((data.quality_voice !== undefined ? data.quality_voice : 1.0) * 100)}%`;
+            if (elVR) elVR.textContent = data.reliability_voice !== undefined ? `${Math.round(data.reliability_voice * 100)}%` : '--';
+            if (elMQ) elMQ.textContent = `${Math.round((data.quality_motor !== undefined ? data.quality_motor : 1.0) * 100)}%`;
+            if (elMR) elMR.textContent = data.reliability_motor !== undefined ? `${Math.round(data.reliability_motor * 100)}%` : '--';
+
+            // Show/hide AERIS-PD Uncertainty Safety Guard
+            if (data.is_uncertain && elBanner) {
+                elBanner.style.display = 'block';
+                if (elReasons) {
+                    elReasons.textContent = Array.isArray(data.uncertainty_reasons) ? data.uncertainty_reasons.join('; ') : data.uncertainty_reasons;
+                }
+                if (elRec) {
+                    elRec.textContent = data.clinical_recommendation || "Insufficient confidence. Please repeat the assessment or consult a specialist.";
+                }
+            } else if (elBanner) {
+                elBanner.style.display = 'none';
+            }
             
             // Set Combined circular gauge gradient
             multimodalGauge.style.background = `conic-gradient(${color} ${combPct}%, rgba(255,255,255,0.05) ${combPct}%)`;
